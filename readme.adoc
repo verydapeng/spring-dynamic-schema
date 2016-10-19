@@ -56,3 +56,7 @@ ds1: [Person(id=1, name=dapeng)]
 ds2: []
 ds1: [Person(id=1, name=dapeng)]
 ```
+
+= How to run
+
+```mvn spring-boot:run```

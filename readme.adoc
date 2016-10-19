@@ -1,0 +1,58 @@
+= Demo to switch schema dynamically
+
+We have a huge read-only MySql database which is refreshed daily.
+
+However the refresh is not atomic, and it may occasionally fail half way.
+
+The natural solution will be only doing the fresh on a *backup* schema, then *swap* the schema.
+
+Sad enough, there is no easy solution to *rename* the schema. So we need some logic from application to handle the switch
+
+= Solution
+
+Wrap the datasource inside a proxy!
+
+[source,java]
+----
+
+private volatile boolean useDatasource1 = true;
+
+@Bean
+DataSource dataSource() {
+
+    DataSource ds1 = createDatasource("db1");
+    DataSource ds2 = createDatasource("db2");
+
+    return (DataSource) Proxy.newProxyInstance(this.getClass().getClassLoader(),
+            new Class[]{DataSource.class},
+            (proxy, method, args) -> method.invoke(useDatasource1 ? ds1 : ds2, args));
+}
+----
+
+Sample code to test it out
+[source,java]
+----
+@Bean
+ApplicationRunner applicationRunner(PersonRepo repo) {
+    return args -> {
+
+        repo.save(new Person(1, "dapeng"));
+        System.out.println("ds1: " + repo.findAll());
+
+        useDatasource1 = false;
+        System.out.println("ds2: " + repo.findAll());
+
+        useDatasource1 = true;
+        System.out.println("ds1: " + repo.findAll());
+
+    };
+}
+----
+
+When we actually run the project
+
+```
+ds1: [Person(id=1, name=dapeng)]
+ds2: []
+ds1: [Person(id=1, name=dapeng)]
+```

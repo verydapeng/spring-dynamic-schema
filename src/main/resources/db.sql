@@ -1,0 +1,4 @@
+CREATE TABLE PERSON (
+  id   INT PRIMARY KEY,
+  name VARCHAR(255)
+);
